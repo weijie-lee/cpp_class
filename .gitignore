@@ -1,0 +1,21 @@
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Claude workspace
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Build artifacts (optional — PDFs are committed by default)
+# If you want to exclude generated PDFs, uncomment:
+# */pdf/*.pdf
+
+# macOS / Windows noise
+.DS_Store
+Thumbs.db
