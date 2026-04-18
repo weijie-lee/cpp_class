@@ -48,18 +48,43 @@ def _is_emoji_codepoint(cp: int) -> bool:
 
 
 def strip_emoji(text: str) -> str:
-    """Remove emoji and most decorative characters, keeping Chinese/ASCII text."""
+    """
+    Remove emoji and most decorative characters while preserving all other
+    whitespace — in particular, leading indentation inside code blocks must
+    be kept intact (4-space / 8-space indents are semantically meaningful).
+
+    We also convert tabs to 4 spaces for consistent rendering regardless of
+    editor tab width.
+    """
     out = []
     for ch in text:
+        if ch == "\t":
+            out.append("    ")  # normalize tabs to 4 spaces
+            continue
         if ch in _DECORATIVE_CHARS:
             continue
         if _is_emoji_codepoint(ord(ch)):
             continue
         out.append(ch)
-    # Collapse runs of spaces that decorative removal may have left behind.
     result = "".join(out)
-    result = re.sub(r"[ \t]{2,}", " ", result)
-    # Collapse triple-plus blank lines into a pair.
+    # Only collapse extreme (5+) runs of spaces in NON-code context; inside
+    # fenced code blocks we preserve everything. Implementation: walk line
+    # by line, skip lines inside ``` fences.
+    lines = result.split("\n")
+    in_code = False
+    for i, ln in enumerate(lines):
+        if ln.lstrip().startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code:
+            continue
+        # Outside code fences: tidy up orphaned double-spaces that were
+        # produced by removing an emoji in the middle of a sentence, e.g.,
+        # "> 📌 注意" → ">  注意" → "> 注意".
+        lines[i] = re.sub(r" {2,}", " ", ln)
+    result = "\n".join(lines)
+    # Collapse triple-plus blank lines into a pair (same rule applies
+    # inside or outside code — excess blanks waste page space).
     result = re.sub(r"\n{3,}", "\n\n", result)
     return result
 
